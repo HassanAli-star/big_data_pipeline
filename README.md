@@ -15,6 +15,9 @@ This pipeline consists of a streaming data process using Kafka, Spark, Docker, a
 - **Kafka UI**: For monitoring Kafka topics.
 
 ---
+### Docker desktop download link:
+
+https://desktop.docker.com/win/main/arm64/Docker%20Desktop%20Installer.exe?utm_source=docker&utm_medium=webreferral&utm_campaign=dd-smartbutton&utm_location=module&_gl=1*sl3h95*_gcl_au*NDk0OTkzMTY3LjE3MjcxMDEwMTM.*_ga*NDM5Mzk4MzQyLjE3MjU1NDI3Mjc.*_ga_XJWPQMJYHQ*MTcyNzEwMTAxMy45LjEuMTcyNzEwMTAxNy41Ni4wLjA.
 
 ## Steps to Run the Pipeline
 
@@ -138,3 +141,8 @@ Once the pipeline is running, the processed data will be saved as reports in a d
   - `minute_timestamp`: The starting timestamp for the 1-minute time window.
 
 ---
+
+## Stop Spark Job Explicitly
+
+Go to the run and mark it as successful 
+![Pipeline Architecture](stop_spark_job.jpg)
