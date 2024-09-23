@@ -88,6 +88,22 @@ Once the pipeline is running, the processed data will be saved as reports in a d
 
 ---
 
+## Kafka Producer Details
+
+- The Kafka producer is a Python script embedded inside an Airflow DAG that generates **view logs** and pushes them to a Kafka topic. This producer follows a specific schema as mentioned in the requirements:
+
+  | Column Name      | Data Type   | Description                                           |
+  |------------------|-------------|-------------------------------------------------------|
+  | `view_id`        | STRING      | Unique ID of the view record                          |
+  | `start_timestamp`| TIMESTAMP   | Timestamp when the view started                       |
+  | `end_timestamp`  | TIMESTAMP   | Timestamp when the view ended (also when pushed to Kafka)|
+  | `banner_id`      | BIGINT      | The ID of the banner being displayed                  |
+  | `campaign_id`    | INT         | The campaign associated with the view                 |
+
+- Each log is sent to the Kafka topic `view_log` using this schema. The logs represent user interactions with banners (views) and are simulated by this producer.
+
+---
+
 ## Spark Streaming Job
 
 - The Spark script reads view logs from the Kafka topic and processes the data in real-time. The key aspects of the Spark streaming job are:
