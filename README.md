@@ -1,82 +1,124 @@
 
-# Streaming Data Processing Pipeline
+## Pipeline Architecture Overview
 
-## Overview
-This pipeline is designed to process real-time streaming data using Kafka, Apache Spark, and Docker for containerization. Apache Airflow is used to orchestrate the process, ensuring the workflow is smooth and repeatable. The processed data is output in the form of reports, which are saved to a specified local file system.
+This pipeline consists of a streaming data process using Kafka, Spark, Docker, and Airflow for orchestration. The architecture is designed to stream data from Kafka, process it using Spark, and save the output as reports.
+## Architecture
 
-### Architecture
+![Pipeline Architecture](big_data_pipeline.jpg)
 
-![Pipeline Architecture](./Big Data Pipeline.png)
+### Tools & Technologies:
+- **Kafka**: For streaming data.
+- **Spark**: For processing data.
+- **Docker**: For containerized services.
+- **Airflow**: For orchestration and job scheduling.
+- **Local File System**: For reading input CSV files and writing output reports.
+- **Kafka UI**: For monitoring Kafka topics.
 
-- **Apache Airflow**: Orchestrates the entire workflow, controlling the scheduling and execution of jobs.
-- **Apache Kafka**: Acts as the data streaming source for real-time log ingestion.
-- **Python**: Create a python job inside airflow dag to produce kafka topic(**Producer**).
-- **Local File System**: Static CSV files are also read by the pipeline.
-- **Apache Spark**: Processes the data, performing transformations and aggregations.
-- **Docker**: Used for containerizing all components to run them in isolated environments.
+---
 
-## Prerequisites
-Before setting up the pipeline, ensure you have the following installed:
-- install docker
+## Steps to Run the Pipeline
 
-## Step-by-Step Setup
+### 1. Clone the GitHub Repository
+Start by cloning the required repository:
 
-### Step 1: Setup Docker
-1. pull the following branch from github: https://github.com/HassanAli-star/big_data_pipeline
+```bash
+git clone https://github.com/HassanAli-star/big_data_pipeline
+```
 
-1. Change directory and go inside the big_data_pipeline folder.
-3. Run the containers using:
-   ```bash
-   docker-compose up -d
-   ```
+### 2. Move to the Repo Folder
+Navigate to the folder of the cloned repository:
 
-### Step 2: Kafka UI
-1. After sucessfully created container you can open Kafka UI to see the information about topics, broker, consumer using following url.
-   ```
-   http://localhost:8089/ui
-   ```
-   
+```bash
+cd big_data_pipeline
+```
 
-### Step 3: Airflow UI
-1. Login into the Airflow using following URL:
-   ```
-   http://localhost:8080
-   ```
-2. user and password are 'airflow'
+### 3. Run Docker Compose
+Start all required services using Docker Compose:
 
+```bash
+docker-compose up
+```
 
+Wait for all services to start up. This includes Kafka, Spark, Airflow, and other services required by the pipeline.
 
-### Step 4: Spark Streaming Job
-1. The Spark job reads from two sources:
-   - Real-time data from Kafka (`view_log` topic).
-   - Static CSV files from the local file system.
-   
-2. The Spark job transforms and aggregates data in 1-minute time windows. It uses:
-   - Kafka stream input for real-time data processing.
-   - CSV for joining static information (campaign metadata).
+### 4. Login into Airflow
+Once all services are up, you can access Airflow via your browser. Go to:
 
-3. The job then writes the aggregated data as **Parquet files**, partitioned by `network_id` and `minute_timestamp`.
+```text
+http://localhost:8080
+```
 
-4. To run the Spark job, configure the job in the Airflow DAG or trigger it manually:
-   ```bash
-   spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0 spark_processing_job.py
-   ```
+Login to the Airflow UI to access the DAGs (Directed Acyclic Graphs) for orchestration.
 
-### Step 5: View Processed Reports
-1. The output data is written to the local file system in a specified directory (`/app/output/`).
-2. The output is partitioned by `network_id` and `minute_timestamp` to allow for easy querying and further analysis.
+### 5. Run the Spark Streaming Job
+In the Airflow UI, run the DAG that triggers the Spark Streaming job:
 
-### Step 6: Stopping the Pipeline
-1. To gracefully stop the Spark Streaming job, use:
-   ```python
-   ssc.stop(stopSparkContext=False, stopGracefully=True)
-   ```
+- Navigate to **DAGs**.
+- Search for `report_generator`.
+- Trigger the DAG to start the Spark Streaming job that processes data.
 
-2. To stop the Docker containers:
-   ```bash
-   docker-compose down
-   ```
+### 6. Run the Kafka Producer Job
+After running the Spark Streaming job, run the Kafka producer job to generate the streaming data:
 
-### Future Enhancements
-- **Monitoring**: Integrate monitoring tools like Prometheus and Grafana to monitor the Kafka and Spark pipeline.
-- **Scalability**: Extend the pipeline to work with multiple Kafka topics and micro-batches.
+- In Airflow, search for the DAG named `kafka-producer`.
+- Trigger the DAG to start the Kafka producer job.
+  
+This will start sending view log data to the Kafka topic.
+
+### 7. Monitor Kafka Topics
+You can monitor the Kafka topics by logging into the Kafka UI:
+
+```text
+http://localhost:8089
+```
+
+- Check the Kafka topic `view_log` to ensure that the data is being generated and streamed.
+
+### 8. Check the Report Folder for Output Files
+Once the pipeline is running, the processed data will be saved as reports in a designated folder.
+
+- Navigate to the `report` folder in the file system (or a mounted volume, depending on your setup).
+- You should see Parquet files generated based on the processed data from Spark.
+
+---
+
+### Notes:
+- Ensure that all services are up and running before triggering the jobs in Airflow.
+- The Kafka UI can be used to debug and check the status of Kafka topics in real-time.
+
+---
+
+## Spark Streaming Job
+
+- The Spark script reads view logs from the Kafka topic and processes the data in real-time. The key aspects of the Spark streaming job are:
+
+  **Time Window for Reporting**: The logs are processed in 1-minute time windows.
+
+- **Processing Logic**:
+  - **Watermarking** is used to handle late data up to 10 seconds.
+  - For each 1-minute window, the Spark job calculates:
+    - `avg_duration`: The average view duration.
+    - `total_count`: The total number of views.
+  
+- **Output**:
+  - The processed data is written into **Parquet files** with the following schema:
+
+    | Column Name        | Data Type | Description                                                |
+    |--------------------|-----------|------------------------------------------------------------|
+    | `campaign_id`       | INT       | The campaign ID from the view logs                         |
+    | `network_id`        | INT       | Network ID associated with the campaign                    |
+    | `minute_timestamp`  | TIMESTAMP | The start timestamp of the minute for the report window     |
+    | `avg_duration`      | DOUBLE    | The average duration of views during the time window        |
+    | `total_count`       | INT       | The total number of views in the time window                |
+
+- The Parquet files are partitioned by `network_id` and `minute_timestamp` to facilitate easy querying and retrieval.
+
+---
+
+## Folder Structure
+
+- The report files are saved in the `report` directory. Files are partitioned based on:
+  - `network_id`: The network identifier for the campaign.
+  - `minute_timestamp`: The starting timestamp for the 1-minute time window.
+
+---
