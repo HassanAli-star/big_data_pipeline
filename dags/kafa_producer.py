@@ -15,7 +15,8 @@ default_args = {
 conf = {
     'bootstrap.servers': 'kafka:9092'
 }
-
+# List of predefined campaign IDs
+campaign_ids = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
 def delivery_report(err, msg):
     if err is not None:
         print(f"Delivery failed: {err}")
@@ -26,8 +27,8 @@ def generate_view_log():
     view_id = str(uuid.uuid4())
     start_time = datetime.now()
     end_time = start_time + timedelta(seconds=random.randint(1, 600))
-    banner_id = random.randint(1, 100)
-    campaign_id = random.randint(1, 10)
+    banner_id = random.randint(1, 10)
+    campaign_id = random.choice(campaign_ids)  # Randomly select from predefined campaign_ids
 
     return {
         'view_id': view_id,
