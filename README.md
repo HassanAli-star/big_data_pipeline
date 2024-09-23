@@ -145,4 +145,4 @@ Once the pipeline is running, the processed data will be saved as reports in a d
 ## Stop Spark Job Explicitly
 
 Go to the run and mark it as successful 
-![Pipeline Architecture](stop_spark_job.jpg)
+![Pipeline Architecture](stop_spark_sreaming.jpg)
