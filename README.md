@@ -2,7 +2,7 @@
 # Streaming Data Processing Pipeline
 
 ## Overview
-This pipeline is designed to process real-time streaming data using Kafka, Apache Spark, and Docker for containerization. Apache Airflow is used to orchestrate the process, ensuring the workflow is smooth and repeatable. The processed data is output in the form of reports, which are saved to a specified file system.
+This pipeline is designed to process real-time streaming data using Kafka, Apache Spark, and Docker for containerization. Apache Airflow is used to orchestrate the process, ensuring the workflow is smooth and repeatable. The processed data is output in the form of reports, which are saved to a specified local file system.
 
 ### Architecture
 
@@ -10,45 +10,41 @@ This pipeline is designed to process real-time streaming data using Kafka, Apach
 
 - **Apache Airflow**: Orchestrates the entire workflow, controlling the scheduling and execution of jobs.
 - **Apache Kafka**: Acts as the data streaming source for real-time log ingestion.
+- **Python**: Create a python job inside airflow dag to produce kafka topic(**Producer**).
 - **Local File System**: Static CSV files are also read by the pipeline.
 - **Apache Spark**: Processes the data, performing transformations and aggregations.
 - **Docker**: Used for containerizing all components to run them in isolated environments.
 
 ## Prerequisites
 Before setting up the pipeline, ensure you have the following installed:
-- Docker & Docker Compose
-- Apache Airflow
-- Apache Kafka
-- Apache Spark
+- install docker
 
 ## Step-by-Step Setup
 
 ### Step 1: Setup Docker
-1. Create a `docker-compose.yml` file to configure Kafka, Zookeeper, Spark, and Airflow containers.
-2. Build the necessary Docker images for Kafka, Spark, and Airflow.
+1. pull the following branch from github: https://github.com/HassanAli-star/big_data_pipeline
+
+1. Change directory and go inside the big_data_pipeline folder.
 3. Run the containers using:
    ```bash
    docker-compose up -d
    ```
 
-### Step 2: Configure Kafka
-1. Create Kafka topics for streaming:
-   ```bash
-   kafka-topics.sh --create --topic view_log --bootstrap-server kafka:9092
+### Step 2: Kafka UI
+1. After sucessfully created container you can open Kafka UI to see the information about topics, broker, consumer using following url.
    ```
-2. Configure the Kafka producer to send logs or other real-time data to the `view_log` topic.
-
-### Step 3: Set Up Airflow
-1. Place the Airflow DAG script in the `/dags` folder.
-2. Make sure Airflow is correctly set up in the `docker-compose.yml`:
-   - Enable Web UI by exposing the port (usually `8080`).
-   - Add the necessary variables in the Airflow DAG script, such as Spark configurations and Kafka topics.
-
-3. Start Airflow Scheduler and Webserver:
-   ```bash
-   airflow scheduler &
-   airflow webserver -p 8080 &
+   http://localhost:8089/ui
    ```
+   
+
+### Step 3: Airflow UI
+1. Login into the Airflow using following URL:
+   ```
+   http://localhost:8080
+   ```
+2. user and password are 'airflow'
+
+
 
 ### Step 4: Spark Streaming Job
 1. The Spark job reads from two sources:
