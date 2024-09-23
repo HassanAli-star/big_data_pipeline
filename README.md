@@ -6,7 +6,7 @@ This pipeline is designed to process real-time streaming data using Kafka, Apach
 
 ### Architecture
 
-![Pipeline Architecture](./architecture.png)
+![Pipeline Architecture](./Big Data Pipeline.png)
 
 - **Apache Airflow**: Orchestrates the entire workflow, controlling the scheduling and execution of jobs.
 - **Apache Kafka**: Acts as the data streaming source for real-time log ingestion.
