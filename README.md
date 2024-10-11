@@ -146,3 +146,58 @@ Once the pipeline is running, the processed data will be saved as reports in a d
 
 Go to the run and mark it as successful 
 ![Pipeline Architecture](stop_spark_sreaming.jpg)
+
+
+## Invalid JSON Checker
+
+The pipeline includes a mechanism to check for invalid JSON data in the Kafka stream. This validation process:
+
+- **Checks for Missing Fields**: Ensures required fields such as `view_id`, `start_timestamp`, `end_timestamp`, `banner_id`, `campaign_id`, and `network_id` are present.
+- **Validates Data Types**: Ensures fields like `network_id` and `campaign_id` have the correct data types (e.g., `network_id` should be an integer).
+
+### Output Path for Invalid JSON Records
+
+Any invalid JSON records or records with missing fields and incorrect data types are written to a separate output path:
+
+Invalid records are saved in **Parquet format** in the following path:
+
+```bash
+/invalid_data/
+```
+### **Unit Testing**
+
+Unit testing is implemented to ensure the pipeline's components are functioning correctly. The tests cover various aspects of the pipeline, including data generation, Spark processing, and validation checks for invalid JSON records. The DAG responsible for running the unit tests is orchestrated through **Airflow**.
+
+### Unit Test Cases
+
+- **Data Integrity for Kafka Producer**:
+  - Verifies that the Kafka producer correctly generates and sends view logs to the Kafka topic.
+  - The test ensures that each record follows the required schema and the fields have the correct data types.
+
+- **Spark Streaming Job Processing**:
+  - Tests the Spark job's ability to process view logs from Kafka and generate accurate reports.
+  - Ensures that the Spark job performs the following operations correctly:
+    - **Aggregation**: Calculates the average view duration (`avg_duration`) and the total number of views (`total_count`).
+    - **Windowing**: Ensures that the data is correctly grouped into 1-minute time windows.
+
+### DAG Name in Airflow
+
+The Airflow DAG that orchestrates the unit testing is called:
+
+- **DAG Name**: `pyspark_unit_test_dag`
+
+This DAG is responsible for triggering the execution of the unit tests and ensuring that the pipeline components are functioning as expected.
+
+### Running the Unit Tests
+
+To manually trigger the unit test DAG in Airflow:
+
+1. Login to the Airflow UI at `http://localhost:8080`.
+2. Search for the DAG named `pyspark_unit_test_dag`.
+3. Trigger the DAG to run the unit tests.
+
+Alternatively, you can run the unit tests locally via the command line:
+
+```bash
+python -m unittest discover -s tests
+
