@@ -1,0 +1,4 @@
+{"view_id":"v1", "start_timestamp":"2023-10-08 12:00:00", "end_timestamp":"2023-10-08 12:01:00", "banner_id":100, "campaign_id":1, "network_id":1}
+{"view_id":"v2", "start_timestamp":"2023-10-08 12:00:00", "end_timestamp":"2023-10-08 12:00:40", "banner_id":101, "campaign_id":1, "network_id":1}
+{"view_id":"v1", "start_timestamp":"2023-10-08 12:01:00", "end_timestamp":"2023-10-08 12:01:30", "banner_id":102, "campaign_id":2, "network_id":1}
+{"view_id":"v1", "start_timestamp":"2023-10-08 12:01:00", "end_timestamp":"2023-10-08 12:01:30", "banner_id":102, "campaign_id":2, "network_id":1}

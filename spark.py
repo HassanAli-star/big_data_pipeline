@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, expr, lit
 from pyspark.sql.types import StructType, StructField, StringType, TimestampType, LongType, IntegerType
 from pyspark.sql.functions import from_json, window, avg, count, date_format, current_timestamp
+from functools import reduce
 
 # Initialize SparkSession
 spark = SparkSession.builder \
@@ -35,11 +36,44 @@ try:
     view_log_df = view_log_df.withColumn("parsed_value", from_json(col("value"), schema))
 
     # **Handle malformed JSON records**
-    # Check if the 'parsed_value' column is null (indicating invalid JSON records)
-    valid_view_log_df = view_log_df.filter(col("parsed_value").isNotNull())
+    # Separate valid and invalid JSON
+    valid_json_df = view_log_df.filter(col("parsed_value").isNotNull())
+    invalid_json_df = view_log_df.filter(col("parsed_value").isNull())
 
-    # Select the parsed columns
-    valid_view_log_df = valid_view_log_df.withColumn("current_timestamp", current_timestamp()) \
+    # Define required fields and data types
+    required_fields = [
+        ("view_id", StringType()), 
+        ("start_timestamp", StringType()), 
+        ("end_timestamp", StringType()), 
+        ("banner_id", LongType()), 
+        ("campaign_id", IntegerType()), 
+        ("network_id", IntegerType())
+    ]
+
+    # Check for missing fields and incorrect data types in valid JSON records
+    valid_rows_condition = reduce(
+        lambda acc, field: acc & col(f"parsed_value.{field[0]}").isNotNull() & col(f"parsed_value.{field[0]}").cast(field[1]) == col(f"parsed_value.{field[0]}"),
+        required_fields,
+        lit(True)
+    )
+
+    valid_rows_df = valid_json_df.filter(valid_rows_condition)
+    invalid_rows_df = valid_json_df.filter(~valid_rows_condition)
+
+    # Combine all invalid data (invalid JSON and records with missing fields or wrong types)
+    all_invalid_df = invalid_json_df.union(invalid_rows_df)
+
+    # Write invalid data to invalid JSON data file
+    invalid_query = all_invalid_df \
+        .writeStream \
+        .format("parquet") \
+        .option("path", "/app/invalid_data/") \
+        .option("checkpointLocation", "/app/invalid_data_checkpoint/") \
+        .outputMode("append") \
+        .start()
+
+    # Proceed with valid data
+    valid_rows_df = valid_rows_df.withColumn("current_timestamp", current_timestamp()) \
         .select(
             col("parsed_value.view_id"),
             col("parsed_value.start_timestamp").cast(TimestampType()).alias("start_timestamp"),
@@ -52,7 +86,7 @@ try:
          .withColumn("view_duration", (col("end_timestamp").cast("long") - col("start_timestamp").cast("long")).cast("double"))
 
     # Add watermark to handle late data
-    valid_view_log_df = valid_view_log_df \
+    valid_rows_df = valid_rows_df \
         .withWatermark("start_timestamp", "10 seconds") \
         .withColumnRenamed("network_id", "view_network_id")
 
@@ -60,7 +94,7 @@ try:
     campaigns_df = spark.read.option("header", "true").csv("/app/input_file/campaigns1.csv")
 
     # Join with campaign data
-    valid_view_log_df = valid_view_log_df \
+    valid_rows_df = valid_rows_df \
         .join(campaigns_df, "campaign_id", "inner") \
         .select(
             col("view_id"),
@@ -75,7 +109,7 @@ try:
         )
 
     # Aggregating the data
-    aggregated_view_log_df = valid_view_log_df \
+    aggregated_view_log_df = valid_rows_df \
         .groupBy(
             window(col("start_timestamp"), "1 minute"),
             col("network_id"),
@@ -104,6 +138,7 @@ try:
         .start()
 
     query.awaitTermination()
+    invalid_query.awaitTermination()
 
 except Exception as e:
     print(f"Error occurred: {e}")
